@@ -1,36 +1,52 @@
 import pygame
 from settings import *
+import random
+import os
+
+# Load gambar dari folder assets
+ASSETS_DIR = os.path.join(os.path.dirname(__file__), "assets")
+OBSTACLE_IMG = pygame.image.load(os.path.join(ASSETS_DIR, "stone_obstacle_bg.png"))
+GROUND_IMG = pygame.image.load(os.path.join(ASSETS_DIR, "which-nether-rack-texture-bg.jpg"))
+BG_IMG = pygame.image.load(os.path.join(ASSETS_DIR, "nether_bg.jpg"))
+
+# Scaling
+OBSTACLE_IMG = pygame.transform.scale(OBSTACLE_IMG, (TILE_SIZE, TILE_SIZE))
+GROUND_IMG = pygame.transform.scale(GROUND_IMG, (TILE_SIZE, TILE_SIZE))
+BG_IMG = pygame.transform.scale(BG_IMG, (WIDTH, HEIGHT))
 
 class Tile(pygame.sprite.Sprite):
-    def __init__(self, x, y):
+    def __init__(self, x, y, image):
         super().__init__()
-        self.image = pygame.Surface((TILE_SIZE, TILE_SIZE))
-        self.image.fill(GRAY)  # atau warna lain untuk tile
+        self.image = image
         self.rect = self.image.get_rect(topleft=(x, y))
 
-def generate_background(screen):
-    screen.fill((30, 30, 30))
-    tile_size = 20
-    for y in range(0, HEIGHT, tile_size):
-        for x in range(0, WIDTH, tile_size):
-            color = GRAY if (x//tile_size + y//tile_size) % 2 == 0 else BLACK
-            pygame.draw.rect(screen, color, (x, y, tile_size, tile_size))
+class TileManager:
+    def __init__(self):
+        self.tiles = pygame.sprite.Group()
+        self.generated_columns = set()
 
-def load_level():
-    tile_map = [
-        "                                ",
-        "                                ",
-        "                                ",
-        "    111                         ",
-        "                                ",
-        "         11111                  ",
-        "                                ",
-        "1111111111111111111111111111111",
-    ]
-    tiles = pygame.sprite.Group()
-    for y, row in enumerate(tile_map):
-        for x, char in enumerate(row):
-            if char == "1":
-                tile = Tile(x * TILE_SIZE, y * TILE_SIZE)
-                tiles.add(tile)
-    return tiles
+    def generate_if_needed(self, player_x):
+        start_col = (player_x // TILE_SIZE) - 2
+        end_col = (player_x // TILE_SIZE) + (WIDTH // TILE_SIZE) + 2
+
+        for col in range(start_col, end_col):
+            if col in self.generated_columns:
+                continue
+
+            # Jalan utama (ground)
+            ground_tile = Tile(col * TILE_SIZE, HEIGHT - TILE_SIZE, GROUND_IMG)
+            self.tiles.add(ground_tile)
+
+            # Obstacle acak
+            if random.random() < 0.2:
+                height_above = random.randint(2, 4)
+                obstacle_tile = Tile(col * TILE_SIZE, HEIGHT - TILE_SIZE * height_above, OBSTACLE_IMG)
+                self.tiles.add(obstacle_tile)
+
+            self.generated_columns.add(col)
+
+    def get_tiles(self):
+        return self.tiles
+
+def generate_background(screen):
+    screen.blit(BG_IMG, (0, 0))
