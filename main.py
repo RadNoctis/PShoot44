@@ -50,11 +50,14 @@ while running:
     # Background
     generate_background(screen)
 
-    # Gambar tile (harus sebelum entity di-blit)
-    for tile in tile_group:
-        screen.blit(tile.image, (tile.rect.x, tile.rect.y))
+    # Hitung offset kamera sebelum menggambar tile/sprite
+    camera_offset = -player.rect.x + WIDTH // 4
 
-    # Update
+    # Gambar tile dengan offset kamera
+    for tile in tile_group:
+        screen.blit(tile.image, (tile.rect.x + camera_offset, tile.rect.y))
+
+    # Update semua entity
     for sprite in all_sprites:
         if isinstance(sprite, Player):
             sprite.update(keys, pygame.mouse.get_pressed(), tile_group)
@@ -63,13 +66,12 @@ while running:
         else:
             sprite.update()
 
-    # Kamera mengikuti pemain
-    camera_offset = -player.rect.x + WIDTH // 4
-
+    # Gambar semua sprite dengan offset kamera
     for sprite in all_sprites:
         screen.blit(sprite.image, (sprite.rect.x + camera_offset, sprite.rect.y))
 
     # UI
     skill_ui.draw(screen, player.selected_skill)
 
+    # Flip layar
     pygame.display.flip()
