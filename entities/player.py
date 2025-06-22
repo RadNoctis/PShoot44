@@ -7,6 +7,7 @@ class Player(pygame.sprite.Sprite):
         super().__init__()
         self.image = pygame.Surface((40, 50))
         self.image.fill(BLUE)
+        self.original_color = BLUE
         self.rect = self.image.get_rect(topleft=(x, y))
         self.vel_y = 0
         self.speed = 5
@@ -17,9 +18,13 @@ class Player(pygame.sprite.Sprite):
         self.skills = skill_group
         self.skill_key = pygame.K_e
 
+        self.selected_skill = 1
+        self.skill_cast = False
+        self.damage_flash_timer = 0
+
     def update(self, keys, mouse, obstacles):
-        # Movement WASD
         dx = dy = 0
+
         if keys[pygame.K_a]:
             dx = -self.speed
         if keys[pygame.K_d]:
@@ -32,12 +37,12 @@ class Player(pygame.sprite.Sprite):
         self.vel_y += GRAVITY
         dy += self.vel_y
 
-        # Collision with tiles
+        # Handle collisions
         dx, dy = self.handle_collisions(dx, dy, obstacles)
         self.rect.x += dx
         self.rect.y += dy
 
-        # Shoot: enter or right click
+        # Shoot
         if keys[pygame.K_RETURN] or mouse[2]:
             self.shoot()
 
@@ -46,43 +51,47 @@ class Player(pygame.sprite.Sprite):
         if keys[pygame.K_2]: self.selected_skill = 2
         if keys[pygame.K_3]: self.selected_skill = 3
 
-        # Skill cast (auto)
+        # Skill cast
         if self.skill_cast:
             self.cast_skill()
             self.skill_cast = False
 
-        # Flash merah jika kena damage
+        # Damage flash effect
         if self.damage_flash_timer > 0:
             self.image.fill(RED)
             self.damage_flash_timer -= 1
         else:
             self.image.fill(self.original_color)
 
-def handle_collisions(self, dx, dy, obstacles):
-    # Cek tabrakan horizontal
-    self.rect.x += dx
-    for obstacle in obstacles:
-        if self.rect.colliderect(obstacle.rect):
-            if dx > 0:
-                self.rect.right = obstacle.rect.left
-            elif dx < 0:
-                self.rect.left = obstacle.rect.right
-            dx = 0  # Hentikan gerakan horizontal jika tabrakan
+    def handle_collisions(self, dx, dy, obstacles):
+        self.rect.x += dx
+        for obstacle in obstacles:
+            if self.rect.colliderect(obstacle.rect):
+                if dx > 0:
+                    self.rect.right = obstacle.rect.left
+                elif dx < 0:
+                    self.rect.left = obstacle.rect.right
+                dx = 0
 
-    # Reset status on_ground sebelum cek vertikal
-    self.on_ground = False
+        self.on_ground = False
+        self.rect.y += dy
+        for obstacle in obstacles:
+            if self.rect.colliderect(obstacle.rect):
+                if dy > 0:
+                    self.rect.bottom = obstacle.rect.top
+                    self.vel_y = 0
+                    self.on_ground = True
+                elif dy < 0:
+                    self.rect.top = obstacle.rect.bottom
+                    self.vel_y = 0
+                dy = 0
 
-    # Cek tabrakan vertikal
-    self.rect.y += dy
-    for obstacle in obstacles:
-        if self.rect.colliderect(obstacle.rect):
-            if dy > 0:
-                self.rect.bottom = obstacle.rect.top
-                self.vel_y = 0
-                self.on_ground = True
-            elif dy < 0:
-                self.rect.top = obstacle.rect.bottom
-                self.vel_y = 0
-            dy = 0  # Hentikan gerakan vertikal jika tabrakan
+        return dx, dy
 
-    return dx, dy
+    def shoot(self):
+        bullet = Bullet(self.rect.centerx, self.rect.centery, 10)
+        self.bullets.add(bullet)
+
+    def cast_skill(self):
+        skill = Skill(self.rect.centerx, self.rect.centery, 15, self.selected_skill)
+        self.skills.add(skill)
