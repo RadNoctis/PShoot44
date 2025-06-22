@@ -25,43 +25,52 @@ class Player(pygame.sprite.Sprite):
     def update(self, keys, mouse, obstacles):
         dx = dy = 0
 
-        if keys[pygame.K_a]:
+        # ➤ Gerak kiri
+        if keys[pygame.K_a] or keys[pygame.K_LEFT]:
             dx = -self.speed
-        if keys[pygame.K_d]:
+
+        # ➤ Gerak kanan
+        if keys[pygame.K_d] or keys[pygame.K_RIGHT]:
             dx = self.speed
-        if keys[pygame.K_w] and self.on_ground:
+
+        # ➤ Lompat
+        if (keys[pygame.K_w] or keys[pygame.K_UP]) and self.on_ground:
             self.vel_y = self.jump_power
             self.on_ground = False
 
-        # Gravity
+        # ➤ Gravity
         self.vel_y += GRAVITY
 
-        # Tombol S untuk turun lebih cepat
-        if keys[pygame.K_s]:
-            self.vel_y += 1  # atau bisa kamu ubah jadi nilai lain, misal += 2
+        # ➤ Turun lebih cepat
+        if keys[pygame.K_s] or keys[pygame.K_DOWN]:
+            self.vel_y += 1
 
         dy += self.vel_y
 
-        # Handle collisions
+        # ➤ Handle tumbukan
         dx, dy = self.handle_collisions(dx, dy, obstacles)
         self.rect.x += dx
         self.rect.y += dy
 
-        # Shoot
-        if keys[pygame.K_RETURN] or mouse[2]:
+        # ➤ Menembak (klik kanan)
+        if mouse[2]:
             self.shoot()
 
-        # Skill selection
+        # ➤ Cast skill (ENTER atau klik kiri)
+        if keys[pygame.K_RETURN] or mouse[0]:
+            self.skill_cast = True
+
+        # ➤ Pilih skill
         if keys[pygame.K_1]: self.selected_skill = 1
         if keys[pygame.K_2]: self.selected_skill = 2
         if keys[pygame.K_3]: self.selected_skill = 3
 
-        # Skill cast
+        # ➤ Cast skill jika aktif
         if self.skill_cast:
             self.cast_skill()
             self.skill_cast = False
 
-        # Damage flash effect
+        # ➤ Efek terkena damage
         if self.damage_flash_timer > 0:
             self.image.fill(RED)
             self.damage_flash_timer -= 1
@@ -98,5 +107,5 @@ class Player(pygame.sprite.Sprite):
         self.bullets.add(bullet)
 
     def cast_skill(self):
-        skill = Skill(self.rect.centerx, self.rect.centery, 15, self.selected_skill)
+        skill = Skill(self.rect.centerx, self.rect.centery, 10, self.selected_skill)
         self.skills.add(skill)
