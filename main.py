@@ -2,7 +2,7 @@ import pygame
 from settings import *
 from entities.player import Player
 from entities.enemy import Enemy
-from level import generate_background
+from level import generate_background, load_level
 from ui.skill_ui import SkillUI
 import sys
 import os
@@ -32,7 +32,6 @@ enemies.add(enemy)
 skill_ui = SkillUI("Plasma Blast", pygame.K_e)
 
 # Tilemap obstacles
-from level import generate_background, load_level  # pastikan load_level ada di level.py
 tile_group = load_level()
 
 # Game loop
@@ -44,10 +43,16 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-
         if event.type == pygame.KEYDOWN:
             if event.key == player.skill_key:
                 player.cast_skill()
+
+    # Background
+    generate_background(screen)
+
+    # Gambar tile (harus sebelum entity di-blit)
+    for tile in tile_group:
+        screen.blit(tile.image, (tile.rect.x, tile.rect.y))
 
     # Update
     for sprite in all_sprites:
@@ -58,15 +63,13 @@ while running:
         else:
             sprite.update()
 
-    # Background
-    generate_background(screen)
-
     # Kamera mengikuti pemain
     camera_offset = -player.rect.x + WIDTH // 4
+
     for sprite in all_sprites:
         screen.blit(sprite.image, (sprite.rect.x + camera_offset, sprite.rect.y))
 
     # UI
-    skill_ui.draw(screen)
+    skill_ui.draw(screen, player.selected_skill)
 
     pygame.display.flip()
