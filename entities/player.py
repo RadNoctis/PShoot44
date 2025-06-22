@@ -35,6 +35,11 @@ class Player(pygame.sprite.Sprite):
 
         # Gravity
         self.vel_y += GRAVITY
+
+        # Tombol S untuk turun lebih cepat
+        if keys[pygame.K_s]:
+            self.vel_y += 1  # atau bisa kamu ubah jadi nilai lain, misal += 2
+
         dy += self.vel_y
 
         # Handle collisions
