@@ -4,16 +4,13 @@ from settings import *
 
 ASSETS_DIR = os.path.join(os.path.dirname(__file__), "..", "assets")
 
-# Load gambar
 SKILL1_IMG = pygame.image.load(os.path.join(ASSETS_DIR, "blue fire_bg.jpg"))
 SKILL2_IMG = pygame.image.load(os.path.join(ASSETS_DIR, "fire_bg.jpg"))
 SKILL3_IMG = pygame.image.load(os.path.join(ASSETS_DIR, "ice_bg.png"))
 
-# Optional: Ubah ukuran agar lebih pas
 SKILL1_IMG = pygame.transform.scale(SKILL1_IMG, (40, 20))
 SKILL2_IMG = pygame.transform.scale(SKILL2_IMG, (45, 30))
 SKILL3_IMG = pygame.transform.scale(SKILL3_IMG, (30, 30))
-
 
 class Bullet(pygame.sprite.Sprite):
     def __init__(self, x, y, speed=10):
@@ -25,17 +22,15 @@ class Bullet(pygame.sprite.Sprite):
 
     def update(self):
         self.rect.x += self.speed
-        if self.rect.left > WIDTH:
+        if self.rect.left > 10000:
             self.kill()
 
-
 class Skill(pygame.sprite.Sprite):
-    def __init__(self, x, y, speed=5, skill_type=1):
+    def __init__(self, x, y, speed=14, skill_type=1):
         super().__init__()
         self.speed = speed
         self.skill_type = skill_type
 
-        # Gunakan gambar berdasarkan skill type
         if skill_type == 1:
             self.image = SKILL1_IMG.convert_alpha()
         elif skill_type == 2:
@@ -43,7 +38,6 @@ class Skill(pygame.sprite.Sprite):
         elif skill_type == 3:
             self.image = SKILL3_IMG.convert_alpha()
         else:
-            # Default jika salah
             self.image = pygame.Surface((30, 10))
             self.image.fill(CYAN)
 
@@ -51,5 +45,5 @@ class Skill(pygame.sprite.Sprite):
 
     def update(self):
         self.rect.x += self.speed
-        if self.rect.left > WIDTH:
+        if self.rect.left > 10000:  # biarkan bisa jauh
             self.kill()
