@@ -1,11 +1,14 @@
 import pygame
+import random
+import sys
+import os
 from settings import *
 from entities.player import Player
 from entities.enemy import Enemy
 from level import generate_background, TileManager
 from ui.skill_ui import SkillUI
-import sys
-import os
+from ui.health_bar import HealthBar
+
 sys.path.append(os.path.dirname(__file__))
 
 pygame.init()
@@ -13,33 +16,49 @@ screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Pixel Platform Shooter")
 clock = pygame.time.Clock()
 
-# Grup
+# Grup sprite
 all_sprites = pygame.sprite.Group()
 enemies = pygame.sprite.Group()
 bullets = pygame.sprite.Group()
 skills = pygame.sprite.Group()
 
-# Player
-player = Player(100, HEIGHT - 150, bullets, skills)
-all_sprites.add(player)
+# === PLAYER ===
+def reset_player():
+    global player
+    player = Player(100, HEIGHT - 150, bullets, skills)
+    all_sprites.add(player)
 
-# Musuh
-enemy = Enemy(600, HEIGHT - 150)
-all_sprites.add(enemy)
-enemies.add(enemy)
+reset_player()
 
-# UI
+# === SPAWN MUSUH ===
+def spawn_enemies(player_x, count=3):
+    for _ in range(count):
+        x = player_x + random.randint(600, 1200)
+        y = HEIGHT - 150
+        enemy = Enemy(x, y)
+        enemies.add(enemy)
+        all_sprites.add(enemy)
+
+spawn_enemies(player.rect.x)
+
+# === UI ===
 skill_ui = SkillUI("Plasma Blast", pygame.K_e)
+health_bar = HealthBar(10, 40)
 
-# Tile Manager
+# === TILE ===
 tile_manager = TileManager()
 
-# Game loop
+# === TIMER ===
+SPAWN_INTERVAL = 2500  # ms
+last_spawn_time = pygame.time.get_ticks()
+
+# === GAME LOOP ===
 running = True
 while running:
     clock.tick(FPS)
     keys = pygame.key.get_pressed()
 
+    # === EVENT ===
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
@@ -47,42 +66,55 @@ while running:
             if event.key == player.skill_key:
                 player.cast_skill()
 
-    # Background
+    # === SPAWN MUSUH SECARA BERKALA ===
+    now = pygame.time.get_ticks()
+    if now - last_spawn_time > SPAWN_INTERVAL:
+        last_spawn_time = now
+        spawn_enemies(player.rect.x)
+
+    # === CAMERA OFFSET ===
+    camera_offset = WIDTH // 2 - player.rect.centerx
+
+    # === BACKGROUND ===
     generate_background(screen)
 
-    # Hitung offset kamera
-    camera_offset = -player.rect.x + WIDTH // 4
-
-    # Update tilemap (endless)
+    # === TILE ===
     tile_manager.generate_if_needed(player.rect.x)
     tiles = tile_manager.get_tiles()
-
-    # Gambar tile dengan offset kamera
     for tile in tiles:
         screen.blit(tile.image, (tile.rect.x + camera_offset, tile.rect.y))
 
-    # Update semua entity
-    for sprite in all_sprites:
-        if isinstance(sprite, Player):
-            sprite.update(keys, pygame.mouse.get_pressed(), tiles)
-        elif isinstance(sprite, Enemy):
-            sprite.update(bullets, skills)
-        else:
-            sprite.update()
+    # === CEK TABRAKAN PLAYER DENGAN MUSUH ===
+    if pygame.sprite.spritecollideany(player, enemies):
+        all_sprites.empty()
+        enemies.empty()
+        bullets.empty()
+        skills.empty()
+        tile_manager = TileManager()
+        reset_player()
+        spawn_enemies(player.rect.x)
+        continue
 
-    # ✅ Update semua skill
+    # === UPDATE ENTITY SECARA GLOBAL (TIDAK TERGANTUNG KAMERA) ===
+    player.update(keys, pygame.mouse.get_pressed(), tiles)
+    bullets.update()
     skills.update()
+    enemies.update(bullets, skills)
 
-    # Gambar semua sprite
+    # === RENDER ENTITY DALAM RANGE KAMERA (EFISIEN) ===
     for sprite in all_sprites:
-        screen.blit(sprite.image, (sprite.rect.x + camera_offset, sprite.rect.y))
+        sprite_x_on_screen = sprite.rect.x + camera_offset
+        if -100 <= sprite_x_on_screen <= WIDTH + 100:
+            screen.blit(sprite.image, (sprite_x_on_screen, sprite.rect.y))
 
-    # ✅ Gambar semua skill
     for skill in skills:
-        screen.blit(skill.image, (skill.rect.x + camera_offset, skill.rect.y))
+        skill_x_on_screen = skill.rect.x + camera_offset
+        if -100 <= skill_x_on_screen <= WIDTH + 100:
+            screen.blit(skill.image, (skill_x_on_screen, skill.rect.y))
 
-    # UI
+    # === UI ===
     skill_ui.draw(screen, player.selected_skill)
+    health_bar.draw(screen, 100)
 
-    # Flip layar
+    # === FLIP DISPLAY ===
     pygame.display.flip()
